@@ -11,12 +11,27 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
   const photoCaptureTimeoutRef = useRef(null)
 
   useEffect(() => {
+    // Iniciar cámara automáticamente al montar el componente
     startCamera()
 
     return () => {
       stopCamera()
     }
   }, [])
+
+  // Reiniciar cámara si se pierde la conexión
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !isActive) {
+        startCamera()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [isActive])
 
   useEffect(() => {
     if (status === 'standby' && isActive) {
