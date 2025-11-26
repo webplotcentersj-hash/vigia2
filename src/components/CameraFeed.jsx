@@ -42,14 +42,20 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
 
     // Capturar foto cuando está en modo scanning
     if (status === 'scanning' && videoRef.current && onPhotoCapture) {
+      // Limpiar timeout anterior si existe
+      if (photoCaptureTimeoutRef.current) {
+        clearTimeout(photoCaptureTimeoutRef.current)
+      }
       photoCaptureTimeoutRef.current = setTimeout(() => {
         capturePhoto()
+        photoCaptureTimeoutRef.current = null
       }, 2000) // Esperar 2 segundos después de iniciar el escaneo
     }
 
     return () => {
       if (photoCaptureTimeoutRef.current) {
         clearTimeout(photoCaptureTimeoutRef.current)
+        photoCaptureTimeoutRef.current = null
       }
     }
   }, [status, isActive, onPhotoCapture])

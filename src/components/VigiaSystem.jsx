@@ -252,6 +252,11 @@ const VigiaSystem = () => {
           setIsListening(true)
           setStatus('chatting')
           speakWithGemini('Puedes hablar conmigo ahora.')
+          
+          // Reiniciar automáticamente después de 30 segundos de conversación
+          setTimeout(() => {
+            resetSystem()
+          }, 30000)
         }, 2000)
       }, 4000)
       
@@ -289,17 +294,35 @@ const VigiaSystem = () => {
     }
   }
 
-  const resetSystem = () => {
+  const resetSystem = useCallback(() => {
+    // Detener reconocimiento de voz
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (err) {
+        console.warn('Error al detener reconocimiento:', err)
+      }
+    }
+    
+    // Cancelar síntesis de voz
+    window.speechSynthesis.cancel()
+    
+    // Limpiar estados
     setStatus('standby')
     setMotionDetected(false)
     setPhoto(null)
     setAnimationUrl(null)
     setIsListening(false)
+    setError(null)
+    
+    // Limpiar audio
     if (alarmAudioRef.current) {
       alarmAudioRef.current.pause()
       alarmAudioRef.current.currentTime = 0
     }
-  }
+    
+    console.log('Sistema reiniciado')
+  }, [])
 
   return (
     <div className="vigia-system">
