@@ -91,47 +91,71 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
 
   const startMotionDetection = () => {
     if (!videoRef.current || !canvasRef.current) return
+    
+    // Detener detección anterior si existe
+    stopMotionDetection()
 
     const video = videoRef.current
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
 
-    canvas.width = video.videoWidth || 640
-    canvas.height = video.videoHeight || 480
-
-    let lastFrame = null
-    let motionThreshold = 30 // Ajustable según sensibilidad
-    let consecutiveMotionFrames = 0
-    const requiredFrames = 5 // Frames consecutivos para confirmar movimiento
-
-    const detectMotion = () => {
-      if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
-        animationFrameRef.current = requestAnimationFrame(detectMotion)
-        return
+    // Esperar a que el video esté listo
+    const setupCanvas = () => {
+      if (video.videoWidth && video.videoHeight) {
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        startDetection()
+      } else {
+        setTimeout(setupCanvas, 100)
       }
+    }
 
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-      const currentFrame = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const startDetection = () => {
+      let lastFrame = null
+      let motionThreshold = 25 // Sensibilidad ajustada
+      let consecutiveMotionFrames = 0
+      const requiredFrames = 3 // Menos frames para ser más sensible
+      let isDetecting = true
 
-      if (lastFrame) {
-        const motion = calculateMotion(lastFrame, currentFrame)
-        
-        if (motion > motionThreshold) {
-          consecutiveMotionFrames++
-          if (consecutiveMotionFrames >= requiredFrames && status === 'standby') {
-            onMotionDetected()
-            consecutiveMotionFrames = 0
+      const detectMotion = () => {
+        if (!isDetecting || !video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+          if (isDetecting) {
+            animationFrameRef.current = requestAnimationFrame(detectMotion)
           }
-        } else {
-          consecutiveMotionFrames = 0
+          return
+        }
+
+        try {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+          const currentFrame = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+          if (lastFrame) {
+            const motion = calculateMotion(lastFrame, currentFrame)
+            
+            if (motion > motionThreshold) {
+              consecutiveMotionFrames++
+              if (consecutiveMotionFrames >= requiredFrames) {
+                isDetecting = false
+                onMotionDetected()
+                return
+              }
+            } else {
+              consecutiveMotionFrames = Math.max(0, consecutiveMotionFrames - 1)
+            }
+          }
+
+          lastFrame = currentFrame
+          animationFrameRef.current = requestAnimationFrame(detectMotion)
+        } catch (err) {
+          console.error('Error en detección de movimiento:', err)
+          isDetecting = false
         }
       }
 
-      lastFrame = currentFrame
-      animationFrameRef.current = requestAnimationFrame(detectMotion)
+      detectMotion()
     }
 
-    detectMotion()
+    setupCanvas()
   }
 
   const calculateMotion = (frame1, frame2) => {
