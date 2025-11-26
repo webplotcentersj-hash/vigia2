@@ -125,11 +125,84 @@ const VigiaSystem = () => {
     await generateAnimation3D(photoData)
   }, [])
 
+  const generateProcessedImage = useCallback((imageData, description = '') => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        
+        canvas.width = img.width
+        canvas.height = img.height
+        
+        // Dibujar imagen original
+        ctx.drawImage(img, 0, 0)
+        
+        // Aplicar filtros de prófugo de la justicia
+        const imageDataObj = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const data = imageDataObj.data
+        
+        // Ajustar colores: más oscuro, más rojo, más contraste
+        for (let i = 0; i < data.length; i += 4) {
+          // Reducir brillo general
+          data[i] = Math.min(255, data[i] * 0.7) // R
+          data[i + 1] = Math.min(255, data[i + 1] * 0.5) // G
+          data[i + 2] = Math.min(255, data[i + 2] * 0.5) // B
+          
+          // Aplicar tinte rojizo
+          data[i] = Math.min(255, data[i] * 1.2 + 20)
+          data[i + 1] = Math.max(0, data[i + 1] * 0.8)
+          data[i + 2] = Math.max(0, data[i + 2] * 0.8)
+        }
+        
+        ctx.putImageData(imageDataObj, 0, 0)
+        
+        // Agregar marco rojo de advertencia
+        ctx.strokeStyle = '#ff0000'
+        ctx.lineWidth = 8
+        ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20)
+        
+        // Agregar segundo marco interno
+        ctx.strokeStyle = '#ff4444'
+        ctx.lineWidth = 4
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40)
+        
+        // Agregar texto "PRÓFUGO" en la parte superior
+        ctx.fillStyle = '#ff0000'
+        ctx.font = 'bold 40px Arial'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'top'
+        ctx.shadowColor = '#000000'
+        ctx.shadowBlur = 10
+        ctx.fillText('PRÓFUGO', canvas.width / 2, 30)
+        
+        // Agregar texto "BUSCADO" en la parte inferior
+        ctx.fillText('BUSCADO', canvas.width / 2, canvas.height - 70)
+        
+        // Agregar efecto de escaneo (líneas horizontales)
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'
+        ctx.lineWidth = 2
+        for (let y = 0; y < canvas.height; y += 20) {
+          ctx.beginPath()
+          ctx.moveTo(0, y)
+          ctx.lineTo(canvas.width, y)
+          ctx.stroke()
+        }
+        
+        // Convertir a imagen
+        const processedImageUrl = canvas.toDataURL('image/jpeg', 0.9)
+        resolve(processedImageUrl)
+      }
+      img.src = imageData
+    })
+  }, [])
+
   const generateAnimation3D = useCallback(async (photoData) => {
     try {
       setStatus('generating')
       
       let processedImageUrl = photoData
+      let geminiDescription = ''
       
       // Si hay Gemini AI disponible, procesar la imagen
       if (geminiAI) {
@@ -149,38 +222,26 @@ const VigiaSystem = () => {
               }
             },
             {
-              text: `Transforma esta imagen de una persona capturada por el sistema de seguridad VIGIA en una imagen estilo prófugo de la justicia. La imagen debe tener:
-- Efectos visuales de alerta roja
-- Marcos de advertencia alrededor de la persona
-- Estilo de identificación criminal futurista
-- Efectos de escaneo y datos biométricos
-- Diseño que indique que es un prófugo buscado
-- Ambiente oscuro y siniestro
-- Colores rojos y negros predominantes
-
-Describe cómo se vería esta imagen transformada con estos efectos.`
+              text: `Analiza esta imagen de una persona capturada por el sistema de seguridad VIGIA. Describe cómo se vería esta persona en una imagen estilo prófugo de la justicia con efectos visuales de alerta roja, marcos de advertencia, y estilo de identificación criminal futurista.`
             }
           ]
           
           // Procesar imagen con Gemini
           const result = await model.generateContent(parts)
           const response = await result.response
-          const description = response.text()
+          geminiDescription = response.text()
           
-          console.log('Descripción generada por Gemini:', description)
-          
-          // La imagen procesada será la original con efectos CSS mejorados
-          // En el futuro se podría usar Gemini Imagen para generar una nueva imagen
-          processedImageUrl = photoData
+          console.log('Descripción generada por Gemini:', geminiDescription)
           
         } catch (err) {
           console.warn('Error al procesar imagen con Gemini:', err)
-          // Continuar con la imagen original
-          processedImageUrl = photoData
         }
       }
       
-      // Usar la foto con efectos visuales de prófugo
+      // Generar imagen procesada con efectos visuales
+      processedImageUrl = await generateProcessedImage(photoData, geminiDescription)
+      
+      // Usar la imagen procesada
       setAnimationUrl(processedImageUrl)
       
       setTimeout(async () => {
@@ -196,7 +257,13 @@ Describe cómo se vería esta imagen transformada con estos efectos.`
       
     } catch (err) {
       console.error('Error al procesar datos:', err)
-      setAnimationUrl(photoData)
+      // Generar imagen procesada básica sin Gemini
+      try {
+        const processedImageUrl = await generateProcessedImage(photoData)
+        setAnimationUrl(processedImageUrl)
+      } catch (err2) {
+        setAnimationUrl(photoData)
+      }
       setTimeout(async () => {
         setStatus('identified')
         await speakWithGemini('Acceso denegado.')
@@ -208,7 +275,7 @@ Describe cómo se vería esta imagen transformada con estos efectos.`
         }, 2000)
       }, 3000)
     }
-  }, [geminiAI, speakWithGemini])
+  }, [geminiAI, speakWithGemini, generateProcessedImage])
 
   const handleStartVoiceChat = () => {
     setIsListening(true)
