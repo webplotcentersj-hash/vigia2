@@ -87,3 +87,4 @@ La aplicación solicitará los siguientes permisos:
 - Más opciones de personalización
 - Guardado de historial de identificaciones
 
+

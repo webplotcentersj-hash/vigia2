@@ -24,3 +24,4 @@ const PhotoCapture = ({ photo }) => {
 
 export default PhotoCapture
 
+

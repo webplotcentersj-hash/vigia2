@@ -96,3 +96,4 @@ Para desplegar manualmente:
 - Revisa "Logs" para ver errores en tiempo real
 - Usa "Functions" si agregas serverless functions en el futuro
 
+

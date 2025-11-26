@@ -31,3 +31,4 @@ Puedes usar cualquier herramienta de diseño para crear los iconos. El diseño d
 - Debe tener icono en la pantalla de inicio
 - Debe tener nombre "VIGIA PLOT"
 
+
