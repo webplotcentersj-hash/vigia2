@@ -175,34 +175,6 @@ const VigiaSystem = () => {
     }
   }
 
-  const playAlarmSound = () => {
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      
-      // Crear múltiples osciladores para un sonido más complejo
-      for (let i = 0; i < 3; i++) {
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-        
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-        
-        oscillator.frequency.value = 600 + (i * 200)
-        oscillator.type = i === 0 ? 'sine' : 'square'
-        
-        const startTime = audioContext.currentTime + (i * 0.1)
-        gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.1)
-        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5)
-        
-        oscillator.start(startTime)
-        oscillator.stop(startTime + 0.5)
-      }
-    } catch (err) {
-      console.error('Error al reproducir alarma sintética:', err)
-    }
-  }
-
   const resetSystem = () => {
     setStatus('standby')
     setMotionDetected(false)
