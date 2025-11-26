@@ -28,12 +28,22 @@ const VoiceChat = ({ geminiAI, isListening, onStart, onStop, onSpeak }) => {
 
       recognitionRef.current.onend = () => {
         if (isListening) {
-          // Reiniciar si aún está en modo escucha
+          // Reiniciar automáticamente si aún está en modo escucha
           setTimeout(() => {
             if (isListening && recognitionRef.current) {
-              recognitionRef.current.start()
+              try {
+                recognitionRef.current.start()
+              } catch (err) {
+                console.warn('Error al reiniciar reconocimiento:', err)
+                // Intentar de nuevo después de un momento
+                setTimeout(() => {
+                  if (isListening && recognitionRef.current) {
+                    recognitionRef.current.start()
+                  }
+                }, 500)
+              }
             }
-          }, 100)
+          }, 300)
         }
       }
     }
@@ -105,13 +115,9 @@ Responde en español de manera:
   return (
     <div className="voice-chat">
       <div className="voice-chat-header">
-        <h3>Chat con VIGIA</h3>
+        <h3>Comunicación con VIGIA</h3>
         <div className="voice-controls">
-          {!isListening ? (
-            <button className="voice-btn start-btn" onClick={onStart}>
-              🎤 Iniciar Chat
-            </button>
-          ) : (
+          {isListening && (
             <button className="voice-btn stop-btn" onClick={onStop}>
               ⏹ Detener
             </button>

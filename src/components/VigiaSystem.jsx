@@ -183,17 +183,29 @@ Describe cómo se vería esta imagen transformada con estos efectos.`
       // Usar la foto con efectos visuales de prófugo
       setAnimationUrl(processedImageUrl)
       
-      setTimeout(() => {
+      setTimeout(async () => {
         setStatus('identified')
-        speakWithGemini('Análisis completado. Acceso denegado.')
+        await speakWithGemini('Análisis completado. Acceso denegado.')
+        // Iniciar conversación automáticamente después de hablar
+        setTimeout(() => {
+          setIsListening(true)
+          setStatus('chatting')
+          speakWithGemini('Puedes hablar conmigo ahora.')
+        }, 2000)
       }, 4000)
       
     } catch (err) {
       console.error('Error al procesar datos:', err)
       setAnimationUrl(photoData)
-      setTimeout(() => {
+      setTimeout(async () => {
         setStatus('identified')
-        speakWithGemini('Acceso denegado.')
+        await speakWithGemini('Acceso denegado.')
+        // Iniciar conversación automáticamente después de hablar
+        setTimeout(() => {
+          setIsListening(true)
+          setStatus('chatting')
+          speakWithGemini('Puedes hablar conmigo ahora.')
+        }, 2000)
       }, 3000)
     }
   }, [geminiAI, speakWithGemini])
