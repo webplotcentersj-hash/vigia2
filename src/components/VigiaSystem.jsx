@@ -129,27 +129,59 @@ const VigiaSystem = () => {
     try {
       setStatus('generating')
       
-      // Si hay Gemini AI disponible, intentar usarlo
+      let processedImageUrl = photoData
+      
+      // Si hay Gemini AI disponible, procesar la imagen
       if (geminiAI) {
         try {
           const model = geminiAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
           
-          // Crear prompt para generar animación de prófugo de la justicia
-          const prompt = `Analiza esta imagen de una persona capturada por el sistema de seguridad. Crea una descripción detallada de cómo se vería esta persona en una animación 3D holográfica estilo prófugo de la justicia. La animación debe mostrar a la persona con efectos visuales de alerta roja, marcos de advertencia, y un estilo de identificación criminal futurista. Incluye efectos de escaneo, datos biométricos flotantes, y un diseño que indique que es un prófugo buscado.`
+          // Convertir base64 a formato que Gemini pueda procesar
+          const base64Data = photoData.split(',')[1]
+          const mimeType = photoData.split(',')[0].split(':')[1].split(';')[0]
           
-          // Llamar a Gemini para procesar la imagen (no esperamos respuesta, solo procesamos)
-          model.generateContent(prompt).catch(err => {
-            console.warn('Error al llamar a Gemini:', err)
-            // Continuar de todas formas
-          })
+          // Crear partes para Gemini con imagen y texto
+          const parts = [
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Data
+              }
+            },
+            {
+              text: `Transforma esta imagen de una persona capturada por el sistema de seguridad VIGIA en una imagen estilo prófugo de la justicia. La imagen debe tener:
+- Efectos visuales de alerta roja
+- Marcos de advertencia alrededor de la persona
+- Estilo de identificación criminal futurista
+- Efectos de escaneo y datos biométricos
+- Diseño que indique que es un prófugo buscado
+- Ambiente oscuro y siniestro
+- Colores rojos y negros predominantes
+
+Describe cómo se vería esta imagen transformada con estos efectos.`
+            }
+          ]
+          
+          // Procesar imagen con Gemini
+          const result = await model.generateContent(parts)
+          const response = await result.response
+          const description = response.text()
+          
+          console.log('Descripción generada por Gemini:', description)
+          
+          // La imagen procesada será la original con efectos CSS mejorados
+          // En el futuro se podría usar Gemini Imagen para generar una nueva imagen
+          processedImageUrl = photoData
+          
         } catch (err) {
-          console.warn('Error al inicializar modelo:', err)
-          // Continuar sin Gemini
+          console.warn('Error al procesar imagen con Gemini:', err)
+          // Continuar con la imagen original
+          processedImageUrl = photoData
         }
       }
       
-      // Usar la foto con efectos visuales de prófugo (funciona con o sin Gemini)
-      setAnimationUrl(photoData)
+      // Usar la foto con efectos visuales de prófugo
+      setAnimationUrl(processedImageUrl)
       
       setTimeout(() => {
         setStatus('identified')

@@ -58,8 +58,11 @@ const VoiceChat = ({ geminiAI, isListening, onStart, onStop, onSpeak }) => {
 
   const processUserMessage = async (userMessage) => {
     if (!geminiAI) {
-      const errorMsg = 'Gemini AI no está disponible'
+      const errorMsg = 'Sistema de análisis no disponible. Por favor configura la API key de Gemini.'
       setMessages(prev => [...prev, { type: 'system', text: errorMsg }])
+      if (onSpeak) {
+        onSpeak('Lo siento, el sistema de análisis no está disponible.')
+      }
       return
     }
 
@@ -68,7 +71,14 @@ const VoiceChat = ({ geminiAI, isListening, onStart, onStop, onSpeak }) => {
     try {
       const model = geminiAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
       
-      const prompt = `Eres VIGIA, un sistema de seguridad avanzado de PLOT CENTER. Eres profesional pero amigable. El usuario dijo: "${userMessage}". Responde brevemente en español de manera natural y conversacional.`
+      const prompt = `Eres VIGIA, un sistema de seguridad avanzado y futurista de PLOT CENTER. Eres un sistema de seguridad tipo nave espacial, profesional pero con personalidad. El usuario dijo: "${userMessage}". 
+
+Responde en español de manera:
+- Breve y directa
+- Con estilo tecnológico/futurista
+- Profesional pero accesible
+- Como un sistema de seguridad avanzado
+- Máximo 2-3 oraciones`
 
       const result = await model.generateContent(prompt)
       const response = await result.response
@@ -82,7 +92,7 @@ const VoiceChat = ({ geminiAI, isListening, onStart, onStop, onSpeak }) => {
       }
     } catch (error) {
       console.error('Error al procesar mensaje:', error)
-      const errorMsg = 'Lo siento, hubo un error al procesar tu mensaje. Por favor intenta de nuevo.'
+      const errorMsg = 'Error en el sistema de comunicación. Intenta nuevamente.'
       setMessages(prev => [...prev, { type: 'system', text: errorMsg }])
       if (onSpeak) {
         onSpeak(errorMsg)
