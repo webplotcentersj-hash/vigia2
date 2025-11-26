@@ -242,7 +242,7 @@ Describe cómo se vería esta imagen transformada con estos efectos.`
         )}
       </div>
 
-      {status === 'identified' && (
+      {(status === 'identified' || status === 'chatting') && (
         <VoiceChat
           geminiAI={geminiAI}
           isListening={isListening}
