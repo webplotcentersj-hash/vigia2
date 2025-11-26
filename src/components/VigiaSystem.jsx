@@ -22,17 +22,16 @@ const VigiaSystem = () => {
   useEffect(() => {
     // Inicializar sistema de análisis
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ''
-    if (!apiKey) {
-      setError('Sistema de análisis no configurado')
-      // Continuar sin API key para permitir que la app funcione en modo demo
-    } else {
+    if (apiKey) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey)
         setGeminiAI(genAI)
       } catch (err) {
-        setError('Error al inicializar sistema de análisis: ' + err.message)
+        console.warn('Error al inicializar sistema de análisis:', err.message)
+        // Continuar sin API key - la app funcionará en modo demo
       }
     }
+    // Si no hay API key, la app funcionará igual pero sin funciones de IA avanzadas
 
     // Asegurar que el sistema inicie en modo vigilancia
     setStatus('standby')
@@ -127,23 +126,29 @@ const VigiaSystem = () => {
   }, [])
 
   const generateAnimation3D = useCallback(async (photoData) => {
-    if (!geminiAI) {
-      setError('Sistema de análisis no disponible')
-      return
-    }
-
     try {
       setStatus('generating')
       
-      const model = geminiAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+      // Si hay Gemini AI disponible, intentar usarlo
+      if (geminiAI) {
+        try {
+          const model = geminiAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
+          
+          // Crear prompt para generar animación de prófugo de la justicia
+          const prompt = `Analiza esta imagen de una persona capturada por el sistema de seguridad. Crea una descripción detallada de cómo se vería esta persona en una animación 3D holográfica estilo prófugo de la justicia. La animación debe mostrar a la persona con efectos visuales de alerta roja, marcos de advertencia, y un estilo de identificación criminal futurista. Incluye efectos de escaneo, datos biométricos flotantes, y un diseño que indique que es un prófugo buscado.`
+          
+          // Llamar a Gemini para procesar la imagen (no esperamos respuesta, solo procesamos)
+          model.generateContent(prompt).catch(err => {
+            console.warn('Error al llamar a Gemini:', err)
+            // Continuar de todas formas
+          })
+        } catch (err) {
+          console.warn('Error al inicializar modelo:', err)
+          // Continuar sin Gemini
+        }
+      }
       
-      // Crear prompt para generar animación de prófugo de la justicia
-      const prompt = `Analiza esta imagen de una persona capturada por el sistema de seguridad. Crea una descripción detallada de cómo se vería esta persona en una animación 3D holográfica estilo prófugo de la justicia. La animación debe mostrar a la persona con efectos visuales de alerta roja, marcos de advertencia, y un estilo de identificación criminal futurista. Incluye efectos de escaneo, datos biométricos flotantes, y un diseño que indique que es un prófugo buscado.`
-      
-      // Llamar a Gemini para procesar la imagen
-      await model.generateContent(prompt)
-      
-      // Usar la foto con efectos visuales de prófugo
+      // Usar la foto con efectos visuales de prófugo (funciona con o sin Gemini)
       setAnimationUrl(photoData)
       
       setTimeout(() => {
