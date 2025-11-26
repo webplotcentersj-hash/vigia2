@@ -12,7 +12,13 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
 
   useEffect(() => {
     // Iniciar cámara automáticamente al montar el componente
-    startCamera()
+    const initCamera = async () => {
+      // Pequeño delay para asegurar que el DOM esté listo
+      await new Promise(resolve => setTimeout(resolve, 100))
+      startCamera()
+    }
+    
+    initCamera()
 
     return () => {
       stopCamera()
@@ -295,6 +301,21 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
           autoPlay
           playsInline
           muted
+          onLoadedMetadata={() => {
+            console.log('Video metadata cargado - evento onLoadedMetadata')
+            if (videoRef.current && !isActive) {
+              videoRef.current.play().catch(err => {
+                console.error('Error en play desde onLoadedMetadata:', err)
+              })
+            }
+          }}
+          onCanPlay={() => {
+            console.log('Video puede reproducirse')
+            if (videoRef.current && !isActive) {
+              setIsActive(true)
+              setError(null)
+            }
+          }}
           style={{ 
             display: isActive ? 'block' : 'none',
             opacity: isActive ? 1 : 0,
