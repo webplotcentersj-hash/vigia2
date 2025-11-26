@@ -56,6 +56,11 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
 
   const startCamera = async () => {
     try {
+      // Detener cámara anterior si existe
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+      }
+
       const constraints = {
         video: {
           facingMode: 'user', // Cámara frontal
@@ -69,12 +74,34 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.play()
-        setIsActive(true)
+        
+        // Esperar a que el video esté listo
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().then(() => {
+            setIsActive(true)
+            setError(null)
+          }).catch(err => {
+            console.error('Error al reproducir video:', err)
+            setError('Error al reproducir video')
+          })
+        }
+        
+        // Fallback si onloadedmetadata no se dispara
+        setTimeout(() => {
+          if (!isActive && videoRef.current) {
+            videoRef.current.play().then(() => {
+              setIsActive(true)
+              setError(null)
+            }).catch(err => {
+              console.error('Error al reproducir video (fallback):', err)
+            })
+          }
+        }, 500)
       }
     } catch (err) {
       setError('Error al acceder a la cámara: ' + err.message)
       console.error('Error de cámara:', err)
+      setIsActive(false)
     }
   }
 
@@ -213,12 +240,19 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
   return (
     <div className="camera-feed-container">
       <div className="camera-wrapper">
+        {!isActive && !error && (
+          <div className="camera-loading">
+            <div className="loading-spinner"></div>
+            <p>Cargando cámara...</p>
+          </div>
+        )}
         <video
           ref={videoRef}
           className="camera-video"
           autoPlay
           playsInline
           muted
+          style={{ display: isActive ? 'block' : 'none' }}
         />
         <canvas ref={canvasRef} className="motion-canvas" />
         {status === 'scanning' && (
