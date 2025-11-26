@@ -226,7 +226,7 @@ const VigiaSystem = () => {
         </button>
       )}
 
-      {error && (
+      {error && error.includes('Error') && (
         <div className="error-message">
           {error}
         </div>
