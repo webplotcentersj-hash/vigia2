@@ -5,9 +5,13 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  color: white;
+  font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+  background: #000000;
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(0, 100, 200, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0, 200, 255, 0.1) 0%, transparent 50%),
+    linear-gradient(180deg, #000000 0%, #0a0a1a 50%, #000000 100%);
+  color: #00ffff;
   overflow: hidden;
   height: 100vh;
   width: 100vw;
@@ -15,10 +19,27 @@ body {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 255, 0.03) 2px, rgba(0, 255, 255, 0.03) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 255, 255, 0.03) 2px, rgba(0, 255, 255, 0.03) 4px);
+  pointer-events: none;
+  z-index: 1;
 }
 
 #root {
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 2;
 }
 

@@ -20,17 +20,17 @@ const VigiaSystem = () => {
   const recognitionRef = useRef(null)
 
   useEffect(() => {
-    // Inicializar Gemini AI
+    // Inicializar sistema de análisis
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || ''
     if (!apiKey) {
-      setError('Por favor configura VITE_GEMINI_API_KEY en tu archivo .env')
+      setError('Sistema de análisis no configurado')
       // Continuar sin API key para permitir que la app funcione en modo demo
     } else {
       try {
         const genAI = new GoogleGenerativeAI(apiKey)
         setGeminiAI(genAI)
       } catch (err) {
-        setError('Error al inicializar Gemini AI: ' + err.message)
+        setError('Error al inicializar sistema de análisis: ' + err.message)
       }
     }
 
@@ -128,38 +128,36 @@ const VigiaSystem = () => {
 
   const generateAnimation3D = useCallback(async (photoData) => {
     if (!geminiAI) {
-      setError('Gemini AI no está inicializado')
+      setError('Sistema de análisis no disponible')
       return
     }
 
     try {
       setStatus('generating')
       
-      // Nota: Gemini VEO actualmente requiere usar la API de imágenes
-      // Aquí simulamos la generación de animación 3D
-      // En producción, usarías la API de VEO de Gemini cuando esté disponible
-      
       const model = geminiAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' })
       
-      // Convertir la imagen base64 a formato que Gemini pueda procesar
-      const base64Data = photoData.split(',')[1]
+      // Crear prompt para generar animación de prófugo de la justicia
+      const prompt = `Analiza esta imagen de una persona capturada por el sistema de seguridad. Crea una descripción detallada de cómo se vería esta persona en una animación 3D holográfica estilo prófugo de la justicia. La animación debe mostrar a la persona con efectos visuales de alerta roja, marcos de advertencia, y un estilo de identificación criminal futurista. Incluye efectos de escaneo, datos biométricos flotantes, y un diseño que indique que es un prófugo buscado.`
       
-      // Crear prompt para generar animación 3D
-      const prompt = `Esta es una imagen de una persona capturada por el sistema de seguridad VIGIA. Genera una descripción detallada de cómo se vería esta persona en una animación 3D holográfica futurista. La animación debe mostrar a la persona en un entorno de realidad aumentada con efectos visuales avanzados.`
+      // Llamar a Gemini para procesar la imagen
+      await model.generateContent(prompt)
       
-      // Por ahora, usamos la foto como base para la animación con efectos visuales
-      // En producción, integrarías con Gemini VEO API cuando esté disponible
-      setAnimationUrl(photoData) // Usar la foto como placeholder con efectos CSS
+      // Usar la foto con efectos visuales de prófugo
+      setAnimationUrl(photoData)
       
       setTimeout(() => {
         setStatus('identified')
-        speakWithGemini('Identificación completada. Bienvenido a PLOT CENTER.')
-      }, 3000)
+        speakWithGemini('Análisis completado. Acceso denegado.')
+      }, 4000)
       
     } catch (err) {
-      console.error('Error al generar animación:', err)
-      setError('Error al generar animación 3D: ' + err.message)
-      setStatus('identified')
+      console.error('Error al procesar datos:', err)
+      setAnimationUrl(photoData)
+      setTimeout(() => {
+        setStatus('identified')
+        speakWithGemini('Acceso denegado.')
+      }, 3000)
     }
   }, [geminiAI, speakWithGemini])
 

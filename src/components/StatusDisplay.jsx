@@ -15,7 +15,7 @@ const StatusDisplay = ({ status, motionDetected }) => {
       case 'identified':
         return 'IDENTIFICADO'
       case 'generating':
-        return 'GENERANDO ANIMACIÓN...'
+        return 'CARGANDO DATOS...'
       case 'chatting':
         return 'CHAT ACTIVO'
       default:

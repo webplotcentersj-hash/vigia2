@@ -21,7 +21,7 @@ const Animation3D = ({ animationUrl }) => {
           <div className="hologram-grid"></div>
           <div className="hologram-scan"></div>
         </div>
-        <div className="animation-label">ANIMACIÓN 3D GENERADA</div>
+        <div className="animation-label">ACCESO DENEGADO</div>
       </div>
     </div>
   )
