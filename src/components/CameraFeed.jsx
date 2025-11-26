@@ -105,7 +105,7 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
           
           // Fallback después de 1 segundo
           setTimeout(() => {
-            if (!isActive && video.readyState >= 2) {
+            if (video.readyState >= 2 && video.paused) {
               startPlayback()
             }
             video.removeEventListener('loadedmetadata', handleLoadedMetadata)
