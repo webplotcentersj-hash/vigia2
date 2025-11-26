@@ -118,73 +118,89 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
       
       // Limpiar srcObject anterior
       if (video.srcObject) {
+        const oldStream = video.srcObject
         video.srcObject = null
-        await new Promise(resolve => setTimeout(resolve, 100))
+        if (oldStream instanceof MediaStream) {
+          oldStream.getTracks().forEach(track => track.stop())
+        }
+        await new Promise(resolve => setTimeout(resolve, 200))
       }
       
       // Asignar nuevo stream
       video.srcObject = stream
       console.log('Stream asignado al video')
       
-      // Intentar reproducirá automáticamente con autoplay, pero lo forzamos
-      const tryPlay = async () => {
+      // Función simple para reproducir
+      const playVideo = async () => {
+        if (!video.srcObject) return false
+        
         try {
           await video.play()
-          console.log('Video reproduciéndose')
+          console.log('✅ Video reproduciéndose correctamente')
           setIsActive(true)
           setError(null)
+          return true
         } catch (playErr) {
-          console.error('Error al reproducir:', playErr)
-          // Intentar de nuevo después de un momento
-          setTimeout(async () => {
-            try {
-              await video.play()
-              setIsActive(true)
-              setError(null)
-            } catch (err2) {
-              console.error('Error al reproducir (segundo intento):', err2)
-              setError('Error al reproducir video')
-              setIsActive(false)
-            }
-          }, 500)
+          console.warn('⚠️ Error al reproducir:', playErr.name, playErr.message)
+          return false
         }
       }
       
-      // Si el video ya tiene metadata, reproducir inmediatamente
+      // Intentar reproducir inmediatamente si está listo
       if (video.readyState >= 2) {
-        console.log('Video ya tiene metadata, reproduciendo...')
-        tryPlay()
-      } else {
-        // Esperar a que cargue
-        const onLoaded = () => {
-          console.log('Video cargado, reproduciendo...')
-          tryPlay()
-          video.removeEventListener('loadedmetadata', onLoaded)
-          video.removeEventListener('canplay', onCanPlay)
-        }
-        
-        const onCanPlay = () => {
-          console.log('Video puede reproducirse')
-          if (!isActive) {
-            tryPlay()
-          }
-          video.removeEventListener('loadedmetadata', onLoaded)
-          video.removeEventListener('canplay', onCanPlay)
-        }
-        
-        video.addEventListener('loadedmetadata', onLoaded)
-        video.addEventListener('canplay', onCanPlay)
-        
-        // Fallback después de 3 segundos
-        setTimeout(() => {
-          if (!isActive && video.srcObject) {
-            console.log('Fallback: intentando reproducir después de timeout')
-            tryPlay()
-          }
-          video.removeEventListener('loadedmetadata', onLoaded)
-          video.removeEventListener('canplay', onCanPlay)
-        }, 3000)
+        console.log('Video listo, reproduciendo inmediatamente...')
+        await playVideo()
       }
+      
+      // También esperar eventos
+      const handleLoadedMetadata = async () => {
+        console.log('📹 Metadata cargada')
+        if (!isActive) {
+          await playVideo()
+        }
+      }
+      
+      const handleCanPlay = async () => {
+        console.log('▶️ Video puede reproducirse')
+        if (!isActive) {
+          await playVideo()
+        }
+      }
+      
+      const handlePlaying = () => {
+        console.log('🎬 Video está reproduciéndose')
+        setIsActive(true)
+        setError(null)
+      }
+      
+      video.addEventListener('loadedmetadata', handleLoadedMetadata)
+      video.addEventListener('canplay', handleCanPlay)
+      video.addEventListener('playing', handlePlaying)
+      
+      // Fallback múltiple
+      const fallbackTimeout = setTimeout(async () => {
+        if (!isActive && video.srcObject) {
+          console.log('🔄 Fallback: intentando reproducir...')
+          const success = await playVideo()
+          if (!success) {
+            // Último intento después de otro segundo
+            setTimeout(async () => {
+              if (!isActive && video.srcObject) {
+                console.log('🔄 Último intento...')
+                await playVideo()
+              }
+            }, 1000)
+          }
+        }
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+        video.removeEventListener('canplay', handleCanPlay)
+        video.removeEventListener('playing', handlePlaying)
+      }, 2000)
+      
+      // Limpiar timeout si se activa antes
+      video.addEventListener('playing', () => {
+        clearTimeout(fallbackTimeout)
+      }, { once: true })
     } catch (err) {
       console.error('Error completo de cámara:', err)
       setError('Error al acceder a la cámara: ' + err.message)
