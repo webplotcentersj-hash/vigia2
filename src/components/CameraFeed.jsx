@@ -59,6 +59,7 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
       // Detener cámara anterior si existe
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
+        streamRef.current = null
       }
 
       const constraints = {
@@ -73,30 +74,43 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
       streamRef.current = stream
       
       if (videoRef.current) {
-        videoRef.current.srcObject = stream
+        const video = videoRef.current
+        video.srcObject = stream
         
-        // Esperar a que el video esté listo
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().then(() => {
-            setIsActive(true)
-            setError(null)
-          }).catch(err => {
-            console.error('Error al reproducir video:', err)
-            setError('Error al reproducir video')
-          })
-        }
-        
-        // Fallback si onloadedmetadata no se dispara
-        setTimeout(() => {
-          if (!isActive && videoRef.current) {
-            videoRef.current.play().then(() => {
+        // Función para iniciar reproducción
+        const startPlayback = () => {
+          video.play()
+            .then(() => {
               setIsActive(true)
               setError(null)
-            }).catch(err => {
-              console.error('Error al reproducir video (fallback):', err)
             })
+            .catch(err => {
+              console.error('Error al reproducir video:', err)
+              setError('Error al reproducir video: ' + err.message)
+              setIsActive(false)
+            })
+        }
+        
+        // Esperar a que el video esté listo
+        if (video.readyState >= 2) {
+          // Video ya está cargado
+          startPlayback()
+        } else {
+          // Esperar al evento loadedmetadata
+          const handleLoadedMetadata = () => {
+            startPlayback()
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata)
           }
-        }, 500)
+          video.addEventListener('loadedmetadata', handleLoadedMetadata)
+          
+          // Fallback después de 1 segundo
+          setTimeout(() => {
+            if (!isActive && video.readyState >= 2) {
+              startPlayback()
+            }
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+          }, 1000)
+        }
       }
     } catch (err) {
       setError('Error al acceder a la cámara: ' + err.message)
@@ -252,7 +266,10 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
           autoPlay
           playsInline
           muted
-          style={{ display: isActive ? 'block' : 'none' }}
+          style={{ 
+            display: isActive ? 'block' : 'none',
+            opacity: isActive ? 1 : 0
+          }}
         />
         <canvas ref={canvasRef} className="motion-canvas" />
         {status === 'scanning' && (
