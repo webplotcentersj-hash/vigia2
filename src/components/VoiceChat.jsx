@@ -27,23 +27,29 @@ const VoiceChat = ({ geminiAI, isListening, onStart, onStop, onSpeak }) => {
       }
 
       recognitionRef.current.onend = () => {
-        if (isListening) {
+        if (isListening && recognitionRef.current) {
           // Reiniciar automáticamente si aún está en modo escucha
           setTimeout(() => {
             if (isListening && recognitionRef.current) {
               try {
                 recognitionRef.current.start()
               } catch (err) {
-                console.warn('Error al reiniciar reconocimiento:', err)
-                // Intentar de nuevo después de un momento
-                setTimeout(() => {
-                  if (isListening && recognitionRef.current) {
-                    recognitionRef.current.start()
-                  }
-                }, 500)
+                // Si hay error, esperar un poco más antes de reintentar
+                if (err.name !== 'AbortError') {
+                  console.warn('Error al reiniciar reconocimiento:', err)
+                  setTimeout(() => {
+                    if (isListening && recognitionRef.current) {
+                      try {
+                        recognitionRef.current.start()
+                      } catch (err2) {
+                        console.warn('Error al reiniciar reconocimiento (segundo intento):', err2)
+                      }
+                    }
+                  }, 1000)
+                }
               }
             }
-          }, 300)
+          }, 500)
         }
       }
     }
