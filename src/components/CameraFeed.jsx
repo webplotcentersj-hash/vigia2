@@ -12,15 +12,27 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
 
   useEffect(() => {
     // Iniciar cámara automáticamente al montar el componente
+    let mounted = true
+    
     const initCamera = async () => {
-      // Pequeño delay para asegurar que el DOM esté listo
-      await new Promise(resolve => setTimeout(resolve, 100))
-      startCamera()
+      // Esperar a que el video ref esté disponible
+      let attempts = 0
+      while (!videoRef.current && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        attempts++
+      }
+      
+      if (mounted && videoRef.current) {
+        startCamera()
+      } else if (mounted) {
+        setError('No se pudo acceder al elemento de video')
+      }
     }
     
     initCamera()
 
     return () => {
+      mounted = false
       stopCamera()
     }
   }, [])
