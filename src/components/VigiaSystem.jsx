@@ -299,6 +299,7 @@ const VigiaSystem = () => {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop()
+        recognitionRef.current.abort()
       } catch (err) {
         console.warn('Error al detener reconocimiento:', err)
       }
@@ -321,7 +322,12 @@ const VigiaSystem = () => {
       alarmAudioRef.current.currentTime = 0
     }
     
-    console.log('Sistema reiniciado')
+    console.log('Sistema reiniciado - esperando nueva detección')
+    
+    // Forzar re-render para que la cámara se reinicialice si es necesario
+    setTimeout(() => {
+      setStatus('standby')
+    }, 100)
   }, [])
 
   return (

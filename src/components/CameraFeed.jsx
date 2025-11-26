@@ -68,6 +68,10 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
         streamRef.current = null
       }
 
+      // Resetear estado
+      setIsActive(false)
+      setError(null)
+
       const constraints = {
         video: {
           facingMode: 'user', // Cámara frontal
@@ -81,12 +85,22 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
       
       if (videoRef.current) {
         const video = videoRef.current
+        
+        // Limpiar srcObject anterior
+        if (video.srcObject) {
+          video.srcObject = null
+        }
+        
+        // Asignar nuevo stream
         video.srcObject = stream
         
         // Función para iniciar reproducción
         const startPlayback = () => {
+          if (!video.srcObject) return
+          
           video.play()
             .then(() => {
+              console.log('Cámara iniciada correctamente')
               setIsActive(true)
               setError(null)
             })
@@ -97,26 +111,35 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
             })
         }
         
-        // Esperar a que el video esté listo
-        if (video.readyState >= 2) {
-          // Video ya está cargado
+        // Esperar al evento loadedmetadata
+        const handleLoadedMetadata = () => {
+          console.log('Video metadata cargado')
           startPlayback()
-        } else {
-          // Esperar al evento loadedmetadata
-          const handleLoadedMetadata = () => {
-            startPlayback()
-            video.removeEventListener('loadedmetadata', handleLoadedMetadata)
-          }
-          video.addEventListener('loadedmetadata', handleLoadedMetadata)
-          
-          // Fallback después de 1 segundo
-          setTimeout(() => {
-            if (video.readyState >= 2 && video.paused) {
-              startPlayback()
-            }
-            video.removeEventListener('loadedmetadata', handleLoadedMetadata)
-          }, 1000)
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+          video.removeEventListener('loadeddata', handleLoadedData)
         }
+        
+        const handleLoadedData = () => {
+          console.log('Video data cargado')
+          if (!isActive) {
+            startPlayback()
+          }
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+          video.removeEventListener('loadeddata', handleLoadedData)
+        }
+        
+        video.addEventListener('loadedmetadata', handleLoadedMetadata)
+        video.addEventListener('loadeddata', handleLoadedData)
+        
+        // Fallback después de 2 segundos
+        setTimeout(() => {
+          if (!isActive && video.srcObject && video.readyState >= 2) {
+            console.log('Usando fallback para iniciar video')
+            startPlayback()
+          }
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+          video.removeEventListener('loadeddata', handleLoadedData)
+        }, 2000)
       }
     } catch (err) {
       setError('Error al acceder a la cámara: ' + err.message)
@@ -274,7 +297,8 @@ const CameraFeed = ({ onMotionDetected, status, onPhotoCapture }) => {
           muted
           style={{ 
             display: isActive ? 'block' : 'none',
-            opacity: isActive ? 1 : 0
+            opacity: isActive ? 1 : 0,
+            visibility: isActive ? 'visible' : 'hidden'
           }}
         />
         <canvas ref={canvasRef} className="motion-canvas" />
